@@ -2,22 +2,31 @@ import express from "express";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-
-import authRoutes from "./routes/authRoutes.js";
+import authRouter from "./routes/authRoutes.js";
 import messagesRoutes from "./routes/messagesRoute.js";
+import connectDB from "./lib/db.js";
 
 dotenv.config();
 
+if (!process.env.JWT_SECRET) {
+  console.error("JWT_SECRET is not set");
+  process.exit(1);
+}
+
 const app = express();
 
+// Get the directory name of the current file
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Middleware
 app.use(express.json());
 
-app.use("/api/auth", authRoutes);
+// Routes
+app.use("/api/auth", authRouter);
 app.use("/api/messages", messagesRoutes);
 
+// Serve the built frontend in production
 if (process.env.NODE_ENV === "production") {
   const frontendPath = path.resolve(__dirname, "../../frontend/dist");
 
@@ -28,8 +37,10 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+// Start the server
 const PORT = process.env.PORT || 8000;
 
 app.listen(PORT, () => {
+  connectDB();
   console.log(`Server is running on port ${PORT}`);
 });
