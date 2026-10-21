@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import authRouter from "./routes/authRoutes.js";
 import messagesRoutes from "./routes/messagesRoute.js";
 import connectDB from "./lib/db.js";
+import { generalLimiter } from "./middleware/rateLimiter.js";
 
 if (!process.env.JWT_SECRET) {
   console.error("JWT_SECRET is not set");
@@ -18,6 +19,9 @@ const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(express.json());
+
+// Rate limiting
+app.use("/api", generalLimiter);
 
 // Routes
 app.use("/api/auth", authRouter);
