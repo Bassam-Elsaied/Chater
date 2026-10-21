@@ -1,12 +1,9 @@
 import express from "express";
-import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import authRouter from "./routes/authRoutes.js";
 import messagesRoutes from "./routes/messagesRoute.js";
 import connectDB from "./lib/db.js";
-
-dotenv.config();
 
 if (!process.env.JWT_SECRET) {
   console.error("JWT_SECRET is not set");
