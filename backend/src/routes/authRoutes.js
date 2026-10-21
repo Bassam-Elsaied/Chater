@@ -1,12 +1,12 @@
 import express from "express";
-import { register } from "../controllers/authController.js";
+import { login, logout, register } from "../controllers/authController.js";
+import { authLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
-router.post("/register", register);
+router.post("/register", authLimiter, register);
 
-router.post("/login", (req, res) => {
-  res.send("Login");
-});
+router.post("/login", authLimiter, login);
+router.post("/logout", logout);
 
 export default router;
