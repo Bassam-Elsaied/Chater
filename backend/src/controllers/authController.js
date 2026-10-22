@@ -3,8 +3,12 @@ import { generateToken } from "../lib/utils.js";
 import User from "../models/Users.js";
 import bcrypt from "bcryptjs";
 
+const normalizeEmail = (email) =>
+  typeof email === "string" ? email.trim().toLowerCase() : email;
+
 const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, password } = req.body;
+  const email = normalizeEmail(req.body.email);
 
   try {
     // Validate all fields
@@ -34,7 +38,6 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
     const newUser = new User({
       name,
       email,
@@ -42,39 +45,39 @@ const register = async (req, res) => {
       profilePic: "",
     });
 
-    // Generate token and save user
-    if (newUser) {
-      await newUser.save();
-      generateToken(res, newUser._id);
+    await newUser.save();
+    generateToken(res, newUser._id);
 
-      res.status(201).json({
-        message: "User created successfully",
-        user: {
-          _id: newUser._id,
-          name: newUser.name,
-          email: newUser.email,
-          profilePic: newUser.profilePic,
-        },
-      });
+    res.status(201).json({
+      message: "User created successfully",
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        profilePic: newUser.profilePic,
+      },
+    });
 
-      try {
-        await sendWelcomeEmail(email, name, process.env.CLIENT_URL);
-      } catch (error) {
-        console.error(`Error sending welcome email: ${error.message}`);
-      }
-    } else {
-      res.status(401).json({ message: "Invalid user data" });
+    try {
+      await sendWelcomeEmail(email, name, process.env.CLIENT_URL);
+    } catch (error) {
+      console.error(`Error sending welcome email: ${error.message}`);
     }
 
     // Error handling
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ message: "User already exists" });
+    }
+
     console.log(err);
-    res.status(500).json({ message: "Internel server error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  const email = normalizeEmail(req.body.email);
 
   try {
     if (!email || !password) {
@@ -84,19 +87,22 @@ const login = async (req, res) => {
     }
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid cradintal" });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect)
-      return res.status(400).json({ message: "Invalid cradintal" });
+      return res.status(400).json({ message: "Invalid credentials" });
 
     generateToken(res, user._id);
 
     res.status(200).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      profilePic: user.profilePic,
+      message: "Logged in successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
     });
   } catch (err) {
     console.log(err);
@@ -107,7 +113,7 @@ const login = async (req, res) => {
 const logout = (_, res) => {
   res.cookie("jwt", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV !== "development",
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     maxAge: 0,
   });

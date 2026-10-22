@@ -6,6 +6,10 @@ import messagesRoutes from "./routes/messagesRoute.js";
 import connectDB from "./lib/db.js";
 import { generalLimiter } from "./middleware/rateLimiter.js";
 import profileRoutes from "./routes/profileRoute.js";
+import {
+  profileBodyLimit,
+  profileTooLargeMessage,
+} from "./controllers/profileController.js";
 import cookieParser from "cookie-parser";
 
 if (!process.env.JWT_SECRET) {
@@ -20,7 +24,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Middleware
-app.use(express.json());
+const jsonParser = express.json({ limit: "100kb" });
+const profileJsonParser = express.json({ limit: profileBodyLimit });
+
+app.use("/api/profile", profileJsonParser);
+app.use(jsonParser);
 app.use(cookieParser());
 // Rate limiting
 app.use("/api", generalLimiter);
@@ -40,6 +48,18 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
+
+app.use((err, req, res, next) => {
+  if (err.type !== "entity.too.large") {
+    return next(err);
+  }
+
+  const message = req.originalUrl.startsWith("/api/profile")
+    ? profileTooLargeMessage
+    : "Request body is too large";
+
+  res.status(413).json({ message });
+});
 
 // Start the server
 const PORT = process.env.PORT || 8000;
