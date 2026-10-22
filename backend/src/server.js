@@ -5,6 +5,8 @@ import authRouter from "./routes/authRoutes.js";
 import messagesRoutes from "./routes/messagesRoute.js";
 import connectDB from "./lib/db.js";
 import { generalLimiter } from "./middleware/rateLimiter.js";
+import profileRoutes from "./routes/profileRoute.js";
+import cookieParser from "cookie-parser";
 
 if (!process.env.JWT_SECRET) {
   console.error("JWT_SECRET is not set");
@@ -19,13 +21,14 @@ const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(express.json());
-
+app.use(cookieParser());
 // Rate limiting
 app.use("/api", generalLimiter);
 
 // Routes
 app.use("/api/auth", authRouter);
 app.use("/api/messages", messagesRoutes);
+app.use("/api/profile", profileRoutes);
 
 // Serve the built frontend in production
 if (process.env.NODE_ENV === "production") {
@@ -33,7 +36,7 @@ if (process.env.NODE_ENV === "production") {
 
   app.use(express.static(frontendPath));
 
-  app.get("/{*path}", (req, res) => {
+  app.get("/{*path}", (_, res) => {
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
