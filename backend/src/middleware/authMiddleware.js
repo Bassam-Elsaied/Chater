@@ -15,6 +15,10 @@ export const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (err) {
+    if (err instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     console.log(err);
     res.status(500).json({ message: "Internal server error" });
   }
