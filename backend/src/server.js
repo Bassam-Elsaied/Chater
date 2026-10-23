@@ -4,16 +4,22 @@ import { fileURLToPath } from "url";
 import authRouter from "./routes/authRoutes.js";
 import messagesRoutes from "./routes/messagesRoute.js";
 import connectDB from "./lib/db.js";
-import { generalLimiter } from "./middleware/rateLimiter.js";
+
 import profileRoutes from "./routes/profileRoute.js";
 import {
   profileBodyLimit,
   profileTooLargeMessage,
 } from "./controllers/profileController.js";
 import cookieParser from "cookie-parser";
+import { arcjetProtect } from "./middleware/arcjetMiddleware.js";
 
 if (!process.env.JWT_SECRET) {
   console.error("JWT_SECRET is not set");
+  process.exit(1);
+}
+
+if (!process.env.ARCJET_KEY) {
+  console.error("ARCJET_KEY is not set");
   process.exit(1);
 }
 
@@ -30,8 +36,9 @@ const profileJsonParser = express.json({ limit: profileBodyLimit });
 app.use("/api/profile", profileJsonParser);
 app.use(jsonParser);
 app.use(cookieParser());
-// Rate limiting
-app.use("/api", generalLimiter);
+
+// Arcjet protection for API routes only, so static files are not counted
+app.use("/api", arcjetProtect);
 
 // Routes
 app.use("/api/auth", authRouter);
