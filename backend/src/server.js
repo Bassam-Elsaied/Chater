@@ -38,7 +38,7 @@ app.use(jsonParser);
 app.use(cookieParser());
 
 // Arcjet protection for API routes only, so static files are not counted
-app.use("/api", arcjetProtect);
+// app.use("/api", arcjetProtect);
 
 // Routes
 app.use("/api/auth", authRouter);
