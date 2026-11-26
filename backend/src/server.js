@@ -11,7 +11,7 @@ import {
   profileTooLargeMessage,
 } from "./controllers/profileController.js";
 import cookieParser from "cookie-parser";
-import { arcjetProtect } from "./middleware/arcjetMiddleware.js";
+import cors from "cors";
 
 if (!process.env.JWT_SECRET) {
   console.error("JWT_SECRET is not set");
@@ -35,6 +35,7 @@ const profileJsonParser = express.json({ limit: profileBodyLimit });
 
 app.use("/api/profile", profileJsonParser);
 app.use(jsonParser);
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
 
 // Arcjet protection for API routes only, so static files are not counted
